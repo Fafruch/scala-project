@@ -5,13 +5,33 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
 
 object Main {
-  def main(args: Array[String]): Unit = {
-    val browser = JsoupBrowser()
-    val doc = browser.get("https://www.formula1.com/en/results.html/2018/races/984/monaco/fastest-laps.html")
+  def urlBuilder(mode: String, year: Int): String = {
+    val baseUrl = "https://www.formula1.com/en/results.html/"
 
-    // Extract the text inside the element with id "header"
+    baseUrl + "/" + year + "/" + mode + ".html"
+  }
+
+  def main(args: Array[String]): Unit = {
+    if (args.length < 2) {
+      throw new Exception("Not enough arguments. Please pass mode and year.")
+    }
+
+    val mode = args(0)
+    if (mode != "races" && mode != "drivers") {
+      throw new Exception("Wrong mode.")
+    }
+
+    val year = args(1).toInt
+    if (year < 1950 && year > 2018) {
+      throw new Exception("Wrong year.")
+    }
+
+    val url = urlBuilder(mode, year)
+
+    val browser = JsoupBrowser()
+    val doc = browser.get(url)
+
     val result = doc >> elementList(".resultsarchive-table")
-    // res2: String = Test page h1
 
     println(result)
   }
