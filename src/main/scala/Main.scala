@@ -5,7 +5,7 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
 
 object Main {
-  def urlBuilder(mode: String, year: Int): String = {
+  def getURL(mode: String, year: Int): String = {
     val baseUrl = "https://www.formula1.com/en/results.html/"
 
     baseUrl + "/" + year + "/" + mode + ".html"
@@ -26,13 +26,19 @@ object Main {
       throw new Exception("Wrong year.")
     }
 
-    val url = urlBuilder(mode, year)
+    val url = getURL(mode, year)
 
-    val browser = JsoupBrowser()
-    val doc = browser.get(url)
+    try {
+      val browser = JsoupBrowser()
+      val doc = browser.get(url)
 
-    val result = doc >> elementList(".resultsarchive-table")
+      val result = doc >> elementList(".resultsarchive-table")
 
-    println(result)
+      println(result)
+
+    } catch {
+      case _: java.net.UnknownHostException => println("Couldn't reach the host. Please heck your Internet connection.")
+      case e: Exception => println("Unrecognized error occurred:", e)
+    }
   }
 }
