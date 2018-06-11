@@ -16,6 +16,24 @@ case class raceResult(grandPrix: String, date: String, winner: String, car: Stri
 case class races(results: ListBuffer[Option[raceResult]] = ListBuffer()) extends Response
 
 object Main {
+  def getArgs(args: Array[String]): (String, Int) = {
+    if (args.length < 2) {
+      throw new Exception("Not enough arguments. Please pass mode and year.")
+    }
+
+    val mode = args(0)
+    if (mode != "races" && mode != "drivers") {
+      throw new Exception("Wrong mode.")
+    }
+
+    val year = args(1).toInt
+    if (year < 1950 && year > 2018) {
+      throw new Exception("Wrong year.")
+    }
+
+    (mode, year)
+  }
+
   def getURL(mode: String, year: Int): String = {
     val baseUrl = "https://www.formula1.com/en/results.html/"
 
@@ -31,6 +49,7 @@ object Main {
 
     val json = mode match {
       case "races" =>
+        // this block needs refactoring
         val racesResponse = races()
 
         rowsWithoutHeader.foreach { row =>
@@ -62,25 +81,13 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-    if (args.length < 2) {
-      throw new Exception("Not enough arguments. Please pass mode and year.")
-    }
-
-    val mode = args(0)
-    if (mode != "races" && mode != "drivers") {
-      throw new Exception("Wrong mode.")
-    }
-
-    val year = args(1).toInt
-    if (year < 1950 && year > 2018) {
-      throw new Exception("Wrong year.")
-    }
+    // this line in the future will take args from URL with a help of Play controller URL matchers (or sth like that)
+    val (mode, year) = getArgs(args)
 
     val url = getURL(mode, year)
 
     try {
       val response = getResponse(url, mode)
-
       sendToClient(response)
 
     } catch {
