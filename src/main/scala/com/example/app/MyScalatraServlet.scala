@@ -19,6 +19,9 @@ sealed trait ResponseTrait
 case class raceResult(grandPrix: String, date: String, winner: String, car: String, laps: Int, time: String)
 case class races(results: ListBuffer[Option[raceResult]] = ListBuffer()) extends ResponseTrait
 
+case class driverStanding(pos: Int, driver: String, nationality: String, car: String, pts: Int)
+case class drivers(standings: ListBuffer[Option[driverStanding]] = ListBuffer()) extends ResponseTrait
+
 
 object Response {
   def getArgs(args: Array[String]): (String, Int) = {
@@ -76,7 +79,23 @@ object Response {
         racesResponse.asJson // for more condensed response use ".noSpaces"
 
       case "drivers" =>
-      // do something similar
+        // this block also needs refactoring
+        val driversResponse = drivers()
+
+        rowsWithoutHeader.foreach { row =>
+          val tdList = row >> elementList("td")
+
+          val pos = tdList(1).text.toInt
+          val driver = (tdList(2) >> element("a") >> elementList("span")).head.text + " " + (tdList(2) >> elementList("span"))(1).text
+          val nationality = tdList(3).text
+          val car = tdList(4) >> text("a")
+          val pts = tdList(5).text.toInt
+
+          val standing = Some(driverStanding(pos, driver, nationality, car, pts))
+          driversResponse.standings += standing
+        }
+
+        driversResponse.asJson // for more condensed response use ".noSpaces"
     }
 
     json.toString
