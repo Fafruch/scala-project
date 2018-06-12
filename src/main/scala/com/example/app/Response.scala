@@ -10,8 +10,8 @@ import net.ruippeixotog.scalascraper.model.Element
 
 
 sealed trait RowTrait
-case class RaceResult(grandPrix: String, date: String, winner: String, car: String, laps: Int, time: String) extends RowTrait
-case class DriverStanding(pos: Int, driver: String, nationality: String, car: String, pts: Int) extends RowTrait
+case class race(grandPrix: String, date: String, winner: String, car: String, laps: Int, time: String) extends RowTrait
+case class standing(pos: Int, driver: String, nationality: String, car: String, pts: Int) extends RowTrait
 case class ErrorObject(status: String, title: String, details: Option[String])
 
 sealed trait ResponseTrait
@@ -40,7 +40,7 @@ object Response {
           val laps = tdList(5).text.toInt
           val time = tdList(6).text
 
-          listBuffer += RaceResult(grandPrix, date, winner, car, laps, time)
+          listBuffer += race(grandPrix, date, winner, car, laps, time)
 
         case "drivers" =>
           val tdList = row >> elementList("td")
@@ -51,7 +51,7 @@ object Response {
           val car = tdList(4) >> text("a")
           val pts = tdList(5).text.toInt
 
-          listBuffer += DriverStanding(pos, driver, nationality, car, pts)
+          listBuffer += standing(pos, driver, nationality, car, pts)
       }
     }
 
