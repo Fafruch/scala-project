@@ -24,24 +24,6 @@ case class drivers(standings: ListBuffer[Option[driverStanding]] = ListBuffer())
 
 
 object Response {
-  def getArgs(args: Array[String]): (String, Int) = {
-    if (args.length < 2) {
-      throw new Exception("Not enough arguments. Please pass mode and year.")
-    }
-
-    val mode = args(0)
-    if (mode != "races" && mode != "drivers") {
-      throw new Exception("Wrong mode.")
-    }
-
-    val year = args(1).toInt
-    if (year < 1950 && year > 2018) {
-      throw new Exception("Wrong year.")
-    }
-
-    (mode, year)
-  }
-
   def getURL(mode: String, year: Int): String = {
     val baseUrl = "https://www.formula1.com/en/results.html/"
 
@@ -108,6 +90,11 @@ class MyScalatraServlet extends ScalatraServlet {
     val mode: String = params("mode")
     val year: Int = params("year").toInt
 
-    Response.getResponse(mode, year)
+    if (year < 1950 || year > 2018) halt(404)
+
+    mode match {
+      case "races" | "drivers" => Response.getResponse(mode, year)
+      case _ => halt(404)
+    }
   }
 }
