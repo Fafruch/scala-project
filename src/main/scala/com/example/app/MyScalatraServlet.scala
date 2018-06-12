@@ -1,3 +1,5 @@
+package com.example.app
+
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
@@ -6,16 +8,19 @@ import io.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
-import net.ruippeixotog.scalascraper.browser.JsoupBrowser.JsoupElement
+import scala.collection.mutable.ListBuffer
+
+import org.scalatra._
 
 import scala.collection.mutable.ListBuffer
 
-sealed trait Response
+sealed trait ResponseTrait
 
 case class raceResult(grandPrix: String, date: String, winner: String, car: String, laps: Int, time: String)
-case class races(results: ListBuffer[Option[raceResult]] = ListBuffer()) extends Response
+case class races(results: ListBuffer[Option[raceResult]] = ListBuffer()) extends ResponseTrait
 
-object Main {
+
+object Response {
   def getArgs(args: Array[String]): (String, Int) = {
     if (args.length < 2) {
       throw new Exception("Not enough arguments. Please pass mode and year.")
@@ -40,7 +45,9 @@ object Main {
     baseUrl + "/" + year + "/" + mode + ".html"
   }
 
-  def getResponse(url: String, mode: String): String = {
+  def getResponse(mode: String, year: Int): String = {
+    val url = getURL(mode, year)
+
     val browser = JsoupBrowser()
     val doc = browser.get(url)
 
@@ -69,30 +76,19 @@ object Main {
         racesResponse.asJson // for more condensed response use ".noSpaces"
 
       case "drivers" =>
-        // do something similar
+      // do something similar
     }
 
     json.toString
   }
+}
 
-  def sendToClient(response: String): Unit = {
-    // replace this code with some Play response stuff
-    println(response)
-  }
+class MyScalatraServlet extends ScalatraServlet {
 
-  def main(args: Array[String]): Unit = {
-    // this line in the future will take args from URL with a help of Play controller URL matchers (or sth like that)
-    val (mode, year) = getArgs(args)
+  get("/:mode/:year") {
+    val mode: String = params("mode")
+    val year: Int = params("year").toInt
 
-    val url = getURL(mode, year)
-
-    try {
-      val response = getResponse(url, mode)
-      sendToClient(response)
-
-    } catch {
-      case _: java.net.UnknownHostException => println("Couldn't reach the host. Please check your Internet connection.")
-      case e: Exception => println("Unrecognized error occurred:", e)
-    }
+    Response.getResponse(mode, year)
   }
 }
