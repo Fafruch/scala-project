@@ -16,11 +16,14 @@ import scala.collection.mutable.ListBuffer
 
 sealed trait ResponseTrait
 
-case class raceResult(grandPrix: String, date: String, winner: String, car: String, laps: Int, time: String)
-case class races(results: ListBuffer[Option[raceResult]] = ListBuffer()) extends ResponseTrait
+case class ErrorObject(status: String, title: String, details: Option[String])
+case class ErrorResponse(errors: ListBuffer[ErrorObject]) extends ResponseTrait
 
-case class driverStanding(pos: Int, driver: String, nationality: String, car: String, pts: Int)
-case class drivers(standings: ListBuffer[Option[driverStanding]] = ListBuffer()) extends ResponseTrait
+case class RaceResult(grandPrix: String, date: String, winner: String, car: String, laps: Int, time: String)
+case class RacesResponse(data: ListBuffer[Option[RaceResult]] = ListBuffer()) extends ResponseTrait
+
+case class DriverStanding(pos: Int, driver: String, nationality: String, car: String, pts: Int)
+case class DriversResponse(data: ListBuffer[Option[DriverStanding]] = ListBuffer()) extends ResponseTrait
 
 
 object Response {
@@ -42,45 +45,49 @@ object Response {
     val json = mode match {
       case "races" =>
         // this block needs refactoring
-        val racesResponse = races()
+        val racesResponse = RacesResponse()
 
         rowsWithoutHeader.foreach { row =>
           val tdList = row >> elementList("td")
 
           val grandPrix = tdList(1) >> text("a")
           val date = tdList(2).text
-          val winner = (tdList(3) >> elementList("span")).head.text + " " + (tdList(3) >> elementList("span"))(1).text
+          val winner = (tdList(3) >> elementList("span")).head.text + " " + (tdList(3) >> elementList("span")) (1).text
           val car = tdList(4).text
           val laps = tdList(5).text.toInt
           val time = tdList(6).text
 
-          val result = Some(raceResult(grandPrix, date, winner, car, laps, time))
-          racesResponse.results += result
+          val result = Some(RaceResult(grandPrix, date, winner, car, laps, time))
+          racesResponse.data += result
         }
 
         racesResponse.asJson // for more condensed response use ".noSpaces"
 
       case "drivers" =>
         // this block also needs refactoring
-        val driversResponse = drivers()
+        val driversResponse = DriversResponse()
 
         rowsWithoutHeader.foreach { row =>
           val tdList = row >> elementList("td")
 
           val pos = tdList(1).text.toInt
-          val driver = (tdList(2) >> element("a") >> elementList("span")).head.text + " " + (tdList(2) >> elementList("span"))(1).text
+          val driver = (tdList(2) >> element("a") >> elementList("span")).head.text + " " + (tdList(2) >> elementList("span")) (1).text
           val nationality = tdList(3).text
           val car = tdList(4) >> text("a")
           val pts = tdList(5).text.toInt
 
-          val standing = Some(driverStanding(pos, driver, nationality, car, pts))
-          driversResponse.standings += standing
+          val standing = Some(DriverStanding(pos, driver, nationality, car, pts))
+          driversResponse.data += standing
         }
 
         driversResponse.asJson // for more condensed response use ".noSpaces"
     }
 
     json.toString
+  }
+
+  def getErrorResponse(error: ErrorObject): String = {
+    ErrorResponse(ListBuffer(error)).asJson.toString
   }
 }
 
@@ -90,11 +97,12 @@ class MyScalatraServlet extends ScalatraServlet {
     val mode: String = params("mode")
     val year: Int = params("year").toInt
 
-    if (year < 1950 || year > 2018) halt(404)
+    if (year < 1950 || year > 2018) {
+      Response.getErrorResponse(ErrorObject("400", "Wrong year parameter", Some("Only 1950 to 2018 years are available")))
 
-    mode match {
-      case "races" | "drivers" => Response.getResponse(mode, year)
-      case _ => halt(404)
-    }
+    } else mode match {
+        case "races" | "drivers" => Response.getResponse(mode, year)
+        case _ => Response.getErrorResponse(ErrorObject("404", "No route for '/" + mode + "'", None))
+      }
   }
 }
