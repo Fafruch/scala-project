@@ -12,7 +12,7 @@ class MyScalatraServlet extends ScalatraServlet {
       Response.getErrorResponse(ErrorObject("400", "Wrong year parameter", Some("Only 1950 to 2018 years are available")))
 
     } else mode match {
-        case "races" | "drivers" => Response.getResponse(mode, year)
+        case "races" | "drivers" | "team" | "fastest-laps" => Response.getResponse(mode, year)
         case _ => Response.getErrorResponse(ErrorObject("404", "No route for '/" + mode + "'", None))
       }
   }
