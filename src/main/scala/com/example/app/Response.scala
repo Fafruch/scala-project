@@ -1,6 +1,5 @@
 package com.example.app
 
-import scala.collection.mutable.ListBuffer
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
@@ -17,8 +16,8 @@ case class fastestLap(grandPrix: String, driver: String, car: String, time: Stri
 case class ErrorObject(status: String, title: String, details: Option[String])
 
 sealed trait ResponseTrait
-case class Response(data: ListBuffer[RowTrait] = ListBuffer()) extends ResponseTrait
-case class ErrorResponse(errors: ListBuffer[ErrorObject]) extends ResponseTrait
+case class Response(data: List[RowTrait] = List()) extends ResponseTrait
+case class ErrorResponse(errors: List[ErrorObject]) extends ResponseTrait
 
 object Response {
   def getURL(mode: String, year: Int): String = {
@@ -27,10 +26,8 @@ object Response {
     baseUrl + "/" + year + "/" + mode + ".html"
   }
 
-  def getRows(rows: List[Element], mode: String): ListBuffer[RowTrait] = {
-    val listBuffer: ListBuffer[RowTrait] = ListBuffer()
-
-    rows.foreach { row =>
+  def getRows(rows: List[Element], mode: String): List[RowTrait] = {
+    rows.map { row =>
       mode match {
         case "races" =>
           val tdList = row >> elementList("td")
@@ -42,7 +39,7 @@ object Response {
           val laps = tdList(5).text.toInt
           val time = tdList(6).text
 
-          listBuffer += race(grandPrix, date, winner, car, laps, time)
+          race(grandPrix, date, winner, car, laps, time)
 
         case "drivers" =>
           val tdList = row >> elementList("td")
@@ -53,7 +50,7 @@ object Response {
           val car = tdList(4) >> text("a")
           val pts = tdList(5).text.toInt
 
-          listBuffer += standing(pos, driver, nationality, car, pts)
+          standing(pos, driver, nationality, car, pts)
 
         case "team" =>
           val tdList = row >> elementList("td")
@@ -62,7 +59,7 @@ object Response {
           val team = tdList(2) >> text("a")
           val pts = tdList(3).text.toInt
 
-          listBuffer += teamStanding(pos, team, pts)
+          teamStanding(pos, team, pts)
 
         case "fastest-laps" =>
           val tdList = row >> elementList("td")
@@ -72,18 +69,15 @@ object Response {
           val car = tdList(3).text
           val time = tdList(4).text
 
-          listBuffer += fastestLap(grandPrix, driver, car, time)
+          fastestLap(grandPrix, driver, car, time)
       }
     }
-
-    listBuffer
   }
 
   def getResponse(mode: String, year: Int): String = {
     val url = getURL(mode, year)
 
-    val browser = JsoupBrowser()
-    val doc = browser.get(url)
+    val doc = JsoupBrowser().get(url)
 
     val rows = doc >> element(".resultsarchive-table") >> elementList("tr")
     val rowsWithoutHeader = rows.drop(1)
@@ -94,6 +88,6 @@ object Response {
   }
 
   def getErrorResponse(error: ErrorObject): String = {
-    ErrorResponse(ListBuffer(error)).asJson.toString
+    ErrorResponse(List(error)).asJson.toString
   }
 }
